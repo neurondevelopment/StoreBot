@@ -1,0 +1,46 @@
+{
+    "token": "Discord Bot Token",
+    "footer": "TEST",
+    "defaultEmbedColour": "RANDOM",
+    "status": {
+        "type": "WATCHING",
+        "content": "Neuron Development"
+    },
+    "storeBot": {
+        "currency": "GBP",
+        "ip": "localhost",
+        "port": 4242,
+        "invoiceUsePaypal": true,
+        "invoiceUseStripe": true,
+        "invoiceSuccessUrl": "https://youtube.com",
+        "invoiceCancelUrl": "https://youtube.com",
+        "globalCustomerRoles": [],
+        "serverID": "Server ID",
+        "paypalSandboxOrLive": "live",
+        "stripeSecretKey": "",
+        "paypalClientID": "",
+        "paypalClientSecret": "",
+        "email": {
+            "sendEmails": false,
+            "sendGridApiKey": "",
+            "fromEmail": "email@support.com"
+        },
+        "format": {
+            "buttonHideOrDisable": "disable",
+            "currencySymbol": "£",
+            "currencyBeforeOrAfter": "before",
+            "paypalEmoji": "💸",
+            "stripeEmoji": "💳",
+            "invoiceImage": "",
+            "openTicket": "Open Ticket",
+            "redirect": "Redirect",
+            "download": "Download",
+            "ticketEmoji": "🎫",
+            "ticketMessage": "Thank you for creating a ticket!"
+        }
+    },
+    "logs": {
+        "commandLogs": "Channel ID",
+        "paymentLogs": "Channel ID"
+    }
+}

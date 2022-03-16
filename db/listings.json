@@ -1,0 +1,34 @@
+{
+    "Listing 1": {
+        "type": "One-Time", 
+        "channelID": "Channel ID",
+        "messageID": "", 
+        "embed": {
+            "colour": "RANDOM",
+            "description": "Cool listing", 
+            "features": [ 
+                "Feature 1",
+                "Feature 2"
+            ],
+            "thumbnail": "", 
+            "image": "", 
+            "footer": "aa" 
+        },
+        "productInfo": {
+            "price": "5", 
+            "currency": "£", 
+            "releaseDate": "{DATE}", 
+            "usePaypal": true, 
+            "useStripe": true, 
+            "success_url": "https://youtube.com/amongus", 
+            "cancel_url": "https://youtube.com", 
+            "format": "{CURRENCY} {PRICE}", 
+            "customerRoles": [], 
+            "redirectURL": "", 
+            "downloadURL": "", 
+            "categoryID": "Channel ID" 
+        },
+        "clients": [] 
+    } 
+}
+    
