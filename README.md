@@ -133,14 +133,14 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[contributors-shield]: https://img.shields.io/github/contributors/neurondevelopment/CoreBot.svg?style=for-the-badge
-[contributors-url]: https://github.com/neurondevelopment/CoreBot/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/neurondevelopment/CoreBot.svg?style=for-the-badge
-[forks-url]: https://github.com/neurondevelopment/CoreBot/network/members
-[stars-shield]: https://img.shields.io/github/stars/neurondevelopment/CoreBot.svg?style=for-the-badge
-[stars-url]: https://github.com/github_username/repo_name/stargazers
-[issues-shield]: https://img.shields.io/github/issues/neurondevelopment/CoreBot.svg?style=for-the-badge
-[issues-url]: https://github.com/neurondevelopment/CoreBot/issues
-[license-shield]: https://img.shields.io/github/license/neurondevelopment/CoreBot.svg?style=for-the-badge
-[license-url]: https://github.com/neurondevelopment/CoreBot/blob/master/LICENSE.txt
+[contributors-shield]: https://img.shields.io/github/contributors/neurondevelopment/StoreBot.svg?style=for-the-badge
+[contributors-url]: https://github.com/neurondevelopment/StoreBot/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/neurondevelopment/StoreBot.svg?style=for-the-badge
+[forks-url]: https://github.com/neurondevelopment/StoreBot/network/members
+[stars-shield]: https://img.shields.io/github/stars/neurondevelopment/StoreBot.svg?style=for-the-badge
+[stars-url]: https://github.com/neurondevelopment/StoreBot/stargazers
+[issues-shield]: https://img.shields.io/github/issues/neurondevelopment/StoreBot.svg?style=for-the-badge
+[issues-url]: https://github.com/neurondevelopment/StoreBot/issues
+[license-shield]: https://img.shields.io/github/license/neurondevelopment/StoreBot.svg?style=for-the-badge
+[license-url]: https://github.com/neurondevelopment/StoreBot/blob/master/LICENSE.txt
 
