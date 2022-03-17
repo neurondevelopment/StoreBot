@@ -142,5 +142,5 @@ Distributed under the MIT License. See `LICENSE` for more information.
 [issues-shield]: https://img.shields.io/github/issues/neurondevelopment/StoreBot.svg?style=for-the-badge
 [issues-url]: https://github.com/neurondevelopment/StoreBot/issues
 [license-shield]: https://img.shields.io/github/license/neurondevelopment/StoreBot.svg?style=for-the-badge
-[license-url]: https://github.com/neurondevelopment/StoreBot/blob/master/LICENSE.txt
+[license-url]: https://github.com/neurondevelopment/StoreBot/blob/main/LICENSE
 
