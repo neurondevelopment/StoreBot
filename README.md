@@ -59,12 +59,13 @@ This is an example of how to list things you need to use the software and how to
    ```js
    token serverID
    ```
-4. Fill in the appropriate payment processor API keys ([stripe](https://dashboard.stripe.com/apikeys) & [paypal](https://developer.paypal.com/developer/applications))
-5. Invite or reinvite the bot with the following link, replace YOURCLIENTID with the Client ID of your bot
+5. In the discord developer dashboard, where you created your bot and got its token, scroll down to 'Privileged Gateway Intents' and tick the SERVER MEMBERS intent.
+6. Fill in the appropriate payment processor API keys ([stripe](https://dashboard.stripe.com/apikeys) & [paypal](https://developer.paypal.com/developer/applications))
+7. Invite or reinvite the bot with the following link, replace YOURCLIENTID with the Client ID of your bot
    ```
    https://discord.com/api/oauth2/authorize?client_id=YOURCLIENTID&permissions=8&scope=applications.commands%20bot
    ```
-6. Starting the bot
+8. Starting the bot
    ```sh
    node .
    ```
@@ -123,7 +124,10 @@ Ensure you have an account setup and then follow the steps below.
 2. Next head to [this link](https://app.sendgrid.com/settings/api_keys) and then create an API key and give it full access, then copy that API key into your config.json
 3. In your config.json you will find a section called fromEmail, in here you can set the address that the email will come from, if you previously authenticated the domain (in the first step) example.com you could use store@example.com as an example, but you can change store to whatever you wish
 
+### Global Commands
+Some users may find they need to use global commands instead of guild commands, so that they can use the commands in multiple servers. Below is a simple guide for that, just note that any updates to commands will take ~1 hour to update in discord's cache when using global commands.
 
+In the index.js, replace `Routes.applicationGuildCommands(client.user.id, serverID)` with `Routes.applicationCommands(client.user.id)`, make sure you don't accidentally remove the comma after it either. 
 
 
 <!-- LICENSE -->
