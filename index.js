@@ -22,6 +22,12 @@ const client  = new Discord.Client({
 client.commands = new Discord.Collection();
 const commandFiles = fs.readdirSync(`./commands`).filter(file => file.endsWith('.js'));
 
+process.on('unhandledRejection', (reason, promise) => {
+    const pr = Promise.resolve(promise);
+    console.log(`Unhandled Rejection at: ${reason.stack || reason} | ${pr}`);
+
+});
+
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v9');
 
