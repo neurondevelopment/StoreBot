@@ -12,19 +12,6 @@ module.exports = {
         .setDescription('Send a custom invoice')
         .addIntegerOption((option) => option.setName('amount').setDescription('Amount to invoice for').setRequired(true)),
     async execute(interaction) {
-        function checkUser(id) {
-            let a = false;
-            const user = interaction.guild.members.cache.get(id);
-            const all = perms.split(',')
-            all.forEach(curr => {
-                if(user.roles.cache.find(r => r.id === curr) || !curr) {
-                    a = true;
-                }
-            })
-            return a;
-        }
-
-        if(checkUser(interaction.user.id) !== true) return interaction.reply({ content: 'You do not have permission to run this command', ephemeral: true })
         const amount = interaction.options.get('amount').value
 
         const embed = new Discord.MessageEmbed()
