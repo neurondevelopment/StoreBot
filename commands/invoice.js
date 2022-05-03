@@ -59,7 +59,7 @@ module.exports = {
         const mes = await interaction.fetchReply()
 
         let obj = {}
-        let invoices = JSON.parse(fs.readFileSync('../db/invoices.json'))
+        let invoices = JSON.parse(fs.readFileSync('./db/invoices.json'))
         obj.status = "Unpaid"
         obj.client = []
         invoices[mes.id] = obj
