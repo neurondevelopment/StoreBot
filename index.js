@@ -155,7 +155,7 @@ async function updateListings() {
                     await message.edit({ embeds: [createEmbed(info,listing)], components: [getButtons(info, listing)]})
                 }
                 else { // Message does not exist, sends a new one and replaces the line in config
-                    const msg = await channel.send({ embeds: [createEmbed(info,a)], components: [getButtons(info, listing)] }) 
+                    const msg = await channel.send({ embeds: [createEmbed(info,listing)], components: [getButtons(info, listing)] }) 
                     const file = JSON.parse(fs.readFileSync('./db/listings.json'))
                     file[listing].messageID = msg.id
                     fs.writeFileSync('./db/listings.json', JSON.stringify(file, null, 4))
