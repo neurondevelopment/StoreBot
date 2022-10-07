@@ -1,13 +1,19 @@
 const Discord = require('discord.js');
+const { Routes, EmbedBuilder, ButtonBuilder, ButtonStyle, InteractionType } = require('discord.js')
 const fs = require('fs')
 const figlet = require('figlet');
 const { token, footer } = require('./config.json');
-const { stripeSecretKey, port, paypalSandboxOrLive, paypalClientSecret, paypalClientID, currency, invoiceSuccessUrl,invoiceCancelUrl, ip, invoiceUseStripe, invoiceUsePaypal, globalCustomerRoles, serverID } = require('./config.json').storeBot
+const { stripeSecretKey, port, paypalSandboxOrLive, paypalClientSecret, paypalClientID, currency, invoiceSuccessUrl, globalCustomerRoles, serverID } = require('./config.json').storeBot
+const { fromEmail, sendgridApiKey, sendEmails } = require('./config.json').storeBot.email
 const app = require('express')()
 const stripe = require('stripe')(stripeSecretKey)
-const { currencySymbol, paypalEmoji, stripeEmoji, ticketEmoji, openTicket, ticketMessage, buttonHideOrDisable, redirect, download } = require('./config.json').storeBot.format
+const sgMail = require('@sendgrid/mail')
+sgMail.setApiKey(sendgridApiKey)
+const { paypalEmoji, stripeEmoji, ticketEmoji, openTicket, buttonHideOrDisable, redirect, download } = require('./config.json').storeBot.format
 const paypal = require('paypal-rest-sdk');
 const events = require('./events')
+const { error } = require('./utils')
+let mainGuild;
 
 paypal.configure({
     'mode': paypalSandboxOrLive, //sandbox or live
@@ -16,7 +22,6 @@ paypal.configure({
 });
 
 const client  = new Discord.Client({
-    partials: ['CHANNEL', 'MESSAGE', "REACTION", 'GUILD_MEMBER'],
     intents: 513
 });
 client.commands = new Discord.Collection();
@@ -29,7 +34,6 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 const { REST } = require('@discordjs/rest');
-const { Routes } = require('discord-api-types/v9');
 
 const commands = [];
 
@@ -40,55 +44,42 @@ for (const file of commandFiles) {
 }
 
 function createEmbed(info, name) {
-    if(info.type === 'Ticket') {
-        const embed = new Discord.MessageEmbed()
-        .setColor("BLUE")
+    const embed = new EmbedBuilder()
+        .setColor(info.embed.color)
         .setTitle(name)
         .setDescription(info.embed.description)
         .setThumbnail(info.embed.thumbnail)
         .setImage(info.embed.image)
         .setFooter({ text: `${info.embed.footer} - Made By Cryptonized` })
-        return embed;
-    }
-    else {
-        let features = '';
-        const embed = new Discord.MessageEmbed()
-            .setColor(info.embed.color)
-            .setTitle(name)
-            .setDescription(info.embed.description)
-            .setThumbnail(info.embed.thumbnail)
-            .setImage(info.embed.image)
-            .setFooter({ text: `${info.embed.footer} - Made By Cryptonized` })
+    if(info.type === 'Ticket') return embed;
+
+    embed.addFields([
+        { name: `Features`, value: info.embed.features.map(f => `> ${f}\n`), inline: false },
+        { name: `Price`, value: `\`\`\`${info.productInfo.format.replace('{PRICE}', info.productInfo.price).replace('{CURRENCY}', info.productInfo.currency)}\`\`\``, inline: true },
+        { name: `Date Released`, value: `\`\`\`${info.productInfo.releaseDate.replace('{DATE}', new Date(Date.now()).toLocaleString().split(',')[0])}\`\`\``, inline: true },
+        { name: `Product Type`, value: `\`\`\`${info.type}\`\`\``, inline: true}
+    ])
+    return embed
     
-        info.embed.features.forEach(curr => {
-            features += `> ${curr}\n`
-        })
-        embed.addField(`Features`, features, false)
-    
-        embed.addField(`Price`, `\`\`\`${info.productInfo.format.replace('{PRICE}', info.productInfo.price).replace('{CURRENCY}', info.productInfo.currency)}\`\`\``, true)
-        embed.addField(`Date Released`, `\`\`\`${info.productInfo.releaseDate.replace('{DATE}', new Date(Date.now()).toLocaleString().split(',')[0])}\`\`\``, true)
-        embed.addField(`Product Type`, `\`\`\`${info.type}\`\`\``, true)
-        return embed
-    }
 }
 
 function getButtons(info, name) {
-    const button1 = new Discord.MessageButton()
-        .setStyle("SECONDARY")
+    const button1 = new ButtonBuilder()
+        .setStyle(ButtonStyle.Secondary)
         .setEmoji(paypalEmoji)
         .setLabel("Pay With Paypal")
-        .setCustomId(`NEURONpaypal_${name}`)
-    const button2 = new Discord.MessageButton()
-        .setStyle("SECONDARY")
+        .setCustomId(`paypal/\\ND\\/${name}`)
+    const button2 = new ButtonBuilder()
+        .setStyle(ButtonStyle.Secondary)
         .setEmoji(stripeEmoji)
         .setLabel("Pay With Stripe")
-        .setCustomId(`NEURONstripe_${name}`)
-    const button3 = new Discord.MessageButton()
+        .setCustomId(`stripe/\\ND\\/${name}`)
+    const button3 = new ButtonBuilder()
 
-    if(info.type === "One-Time" && info.productInfo.downloadURL) button3.setStyle("PRIMARY").setLabel(`${download}`).setCustomId(`NEURONdownload_${name}`)
-    if(info.type === "Redirect") button3.setStyle("LINK").setLabel(`${redirect}`).setURL(info.productInfo.redirectURL)
-    if(info.type === "Ticket") button3.setStyle("SECONDARY").setLabel(`${openTicket}`).setEmoji(ticketEmoji).setCustomId(`NEURONticket_${info.productInfo.categoryID}`)
-    let buttonRow = new Discord.MessageActionRow()
+    if(info.type === "One-Time" && info.productInfo.downloadURL) button3.setStyle(ButtonStyle.Primary).setLabel(`${download}`).setCustomId(`download_${name}`)
+    if(info.type === "Redirect") button3.setStyle(ButtonStyle.Link).setLabel(`${redirect}`).setURL(info.productInfo.redirectURL)
+    if(info.type === "Ticket") button3.setStyle(ButtonStyle.Secondary).setLabel(`${openTicket}`).setEmoji(ticketEmoji).setCustomId(`ticket_${info.productInfo.categoryID}`)
+    let buttonRow = new ActionRowBuilder()
     if(buttonHideOrDisable.toLowerCase() === "hide") {
         if(info.productInfo.usePaypal && info.type === "One-Time") buttonRow.addComponents(button1)
         if(info.productInfo.useStripe && info.type === "One-Time") buttonRow.addComponents(button2)
@@ -103,13 +94,27 @@ function getButtons(info, name) {
     return buttonRow
 }
 
+function sendEmail(emailAddress, productName, serverID, paymentID) {
+    const msg = {
+        to: emailAddress,
+        from: fromEmail,
+        subject: `Payment Confirmation`,
+        text: `Thank you for your recent purchase of ${productName} in ${mainGuild.name}\n\nYour payment ID is: ${paymentID}`
+    }
+    if(sendEmails) {
+        sgMail
+        .send(msg)
+        .catch((error) => {
+            console.error(error)
+        })
+    }
+}
+
 async function globalCustomerRole(user) {
     globalCustomerRoles.forEach(async curr => {
-        const role = client.guilds.cache.get(serverID).roles.cache.get(curr)
+        const role = await mainGuild.roles.fetch(curr).catch(err => { })
         if(role) {
-            const guild = client.guilds.cache.get(serverID)
-            if(!guild) return console.log(`Invalid guild ID specified in config!`)
-            const member = await guild.members.fetch(user)
+            const member = await mainGuild.members.fetch(user)
             if(!member) return;
             member.roles.add(role)
         }
@@ -123,11 +128,9 @@ async function customerRoles(user, product) {
     if(!user) return;
     const info = JSON.parse(fs.readFileSync('./db/listings.json'))[product]
     info.productInfo.customerRoles.forEach(async curr => {
-        const role = client.guilds.cache.get(serverID).roles.cache.get(curr)
+        const role = await mainGuild.roles.fetch(curr).catch(err => { })
         if(role) {
-            const guild = client.guilds.cache.get(serverID)
-            if(!guild) return console.log(`Invalid guild ID specified in config!`)
-            const member = await guild.members.fetch(user)
+            const member = await mainGuild.members.fetch(user)
             if(!member) return;
             member.roles.add(role)
         }
@@ -139,46 +142,60 @@ async function customerRoles(user, product) {
 
 async function updateListings() {
     const listings = JSON.parse(fs.readFileSync('./db/listings.json'))
-    const guild = await client.guilds.fetch(serverID)
-    if(!guild) return console.log(`Specified serverID ${serverID} in console could not be found by bot! Ensure the bot is in that guild and it is a valid ID!`)
-    for(const a in listings) {
-        const info = listings[a]
+    for(const listing in listings) {
+        const info = listings[listing]
         if(info.messageID && info.channelID) {
-            const channel = await guild.channels.fetch(info.channelID)
+            const channel = await mainGuild.channels.fetch(info.channelID)
             if(channel) {
                 const message = await channel.messages.fetch(info.messageID).catch(err => {})
                 
                 if(message) {
-                    await message.edit({ embeds: [createEmbed(info,a)], components: [getButtons(info, a)]})
+                    await message.edit({ embeds: [createEmbed(info,listing)], components: [getButtons(info, listing)]})
                 }
                 else { // Message does not exist, sends a new one and replaces the line in config
-                    const msg = await channel.send({ embeds: [createEmbed(info,a)], components: [getButtons(info, a)] }) 
+                    const msg = await channel.send({ embeds: [createEmbed(info,a)], components: [getButtons(info, listing)] }) 
                     const file = JSON.parse(fs.readFileSync('./db/listings.json'))
-                    file[a].messageID = msg.id
+                    file[listing].messageID = msg.id
                     fs.writeFileSync('./db/listings.json', JSON.stringify(file, null, 4))
                     
                 }
             }
             else { // Channel does not exist, does not continue and warns user
-                console.log(`Channel ID for ${a} does not lead to a valid channel!`)
+                console.log(`Channel ID for ${listing} does not lead to a valid channel!`)
             } 
         }
         else if(!info.channelID) { // Message ID is set but channel isn't
-            console.log(`Channel ID for ${a} not set!`)
+            console.log(`Channel ID for ${listing} not set!`)
         }
         else {
-            const channel = await guild.channels.fetch(info.channelID)
-            const msg = await channel.send({ embeds: [createEmbed(info,a)], components: [getButtons(info, a)]})
+            const channel = await mainGuild.channels.fetch(info.channelID)
+            const msg = await channel.send({ embeds: [createEmbed(info,listing)], components: [getButtons(info, listing)]})
             const file = JSON.parse(fs.readFileSync('./db/listings.json'))
-            file[a].messageID = msg.id
+            file[listing].messageID = msg.id
             fs.writeFileSync('./db/listings.json', JSON.stringify(file, null, 4))
         }
     }
 }
 
+async function checkVersion() {
+    const bot = 'StoreBot'
+    const req = await undici.request(`https://raw.githubusercontent.com/development/${bot}/main/package.json`)
+    const data = await req.body.json()
+    if(data.version > require('./package.json').version) {
+        console.log('\x1b[33m%s\x1b[0m', `New version available, please update to v${data.version} at https://github.com/development/${bot}`)
+    }
+}
+
+setInterval(() => {
+    checkVersion()
+}, 300000)
+
 client.on('ready', async () => {
+    console.log('Please note, you are currently using the staging version of StoreBot, this is not recommended for production use and some features may not work / be unstable.')
+    mainGuild = await client.guilds.fetch(serverID)
+    if(!mainGuild || !mainGuild[0]) return error('index.js', 'Invalid serverID specified in config!')
     updateListings()
-    const rest = new REST({ version: '9' }).setToken(token);
+    const rest = new REST({ version: '10' }).setToken(token);
 
     (async () => {
         try {
@@ -196,23 +213,15 @@ client.on('ready', async () => {
 
     figlet('Neuron Development', function(err, data) {
         if (err) {
-            console.log(err)
-            return;
+            return console.log(err)
         }
         console.log(`\x1b[36m%s\x1b[0m`, data)
         console.log('Started bot')
     });
 
     if(type && content) {
-        if(type.toUpperCase() === 'PLAYING') {
-            client.user.setActivity(content, { type: 'PLAYING' })
-        }
-        else if(type.toUpperCase() === 'WATCHING') {
-            client.user.setActivity(content, { type: 'WATCHING' })
-        }
-        else {
-            console.log('Invalid type specified for the bot\'s status')
-        }
+        if(!ActivityType[type]) return error('Bot Status Config', `Invalid activity type: ${type}`)
+        client.user.setActivity(content, { type: ActivityType[type] })
     }
 
     app.get('/success', (req, res) => {
@@ -230,367 +239,114 @@ client.on('ready', async () => {
         };
       
         paypal.payment.execute(paymentId, execute_payment_json, async function (error, payment) {
-          if (error) {
-              res.redirect('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
-          } else {
-             const channel = await client.channels.fetch(paymentLogs)
+            if (error) {
+                res.redirect('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+            } else {
+                const channel = await client.channels.fetch(paymentLogs).catch(err => { })
 
-              const user = payment.transactions[0].custom.split('|||')[0]
-              const mess = payment.transactions[0].custom.split('|||')[1]
-              const invoice = payment.transactions[0].custom.split('|||')[2]
-              const productName = payment.transactions[0].custom.split('|||')[3]
-              const info = JSON.parse(fs.readFileSync('./db/listings.json'))[payment.transactions[0].custom.split('|||')[3]]
-              if(channel) {
-                const embed = new Discord.MessageEmbed()
-                    .setColor('AQUA')
-                    .setTitle('Purchase Created')
-                    .setDescription(`User <@${user}> (${user}) has just purchased \`${payment.transactions[0].item_list.items[0].name}\` for \`${parseInt(amount).toFixed(2)}\`\n\nPayment ID: ${paymentId}`)
-                    .setThumbnail(channel.guild.iconURL() || `https://cdn.discordapp.com/embed/avatars/0.png`)
-                    .setFooter({ text: `${footer} - Made By Cryptonized` })
+                const { userID, messageID, invoice, productName } = payment.transactions[0].custom  
+                if(channel) {
+                    const embed = new EmbedBuilder()
+                        .setColor('Aqua')
+                        .setTitle('Purchase Created')
+                        .setDescription(`User <@${userID}> (${userID}) has just purchased \`${payment.transactions[0].item_list.items[0].name}\` for \`${parseInt(amount).toFixed(2)}\`\n\nPayment ID: ${paymentId}`)
+                        .setThumbnail(channel.guild.iconURL() || `https://cdn.discordapp.com/embed/avatars/0.png`)
+                        .setFooter({ text: `${footer} - Made By Cryptonized` })
 
-                channel.send({ embeds: [embed] })
-             }
-              if(invoice === 'ye') {
-                events.invoice(user, amount)
-                let obj = {}
-                let invoices = JSON.parse(fs.readFileSync('./db/invoices.json'))
-                obj.status = "Paid"
-                let arr = invoices[mess].client
-                if(invoices[mess].client[0]) {
-                    arr.push(user)
-                    obj.client = arr
+                    channel.send({ embeds: [embed] })
+                }
+                if(invoice) {
+                    events.invoice(userID, amount)
+                    let obj = {}
+                    let invoices = JSON.parse(fs.readFileSync('./db/invoices.json'))
+                    obj.status = "Paid"
+                    let arr = invoices[messageID].client
+                    if(invoices[messageID].client[0]) {
+                        arr.push(userID)
+                        obj.client = arr
+                    }
+                    else {
+                        obj.client = [userID]
+                    }
+                    
+                    invoices[messageID] = obj
+                    fs.writeFileSync('./db/invoices.json', JSON.stringify(invoices))
+                    res.redirect(invoiceSuccessUrl);
+                    
                 }
                 else {
-                    obj.client = [user]
+                    events.paymentCompleted(userID, productName)
+                    await globalCustomerRole(userID)
+                    await customerRoles(userID, productName)
+                    const file = JSON.parse(fs.readFileSync('./db/listings.json'))
+                    const newArray = file[productName].clients.push(userID)
+                    file[productName].clients = newArray
+                    fs.writeFileSync('./db/listings.json', file, null, 4)
+                    res.redirect(file[productName].productInfo.success_url);
+                    
                 }
-                
-                invoices[mess] = obj
-                fs.writeFileSync('./db/invoices.json', JSON.stringify(invoices))
-                res.redirect(invoiceSuccessUrl);
-                
-              }
-              else {
-                events.paymentCompleted(user, productName)
-                await globalCustomerRole(user)
-                await customerRoles(user, productName)
-                const file = JSON.parse(fs.readFileSync('./db/listings.json'))
-                const newArray = file[productName].clients.push(user)
-                file[productName].clients = newArray
-                fs.writeFileSync('./db/listings.json', file, null, 4)
-                res.redirect(file[productName].productInfo.success_url);
-                
-              }
-              const msg = {
-                to: payment.payer.payer_info.email,
-                from: fromEmail,
-                subject: `Payment Confirmation`,
-                text: `Thank you for your recent purchase of ${payment.transactions[0].item_list.items[0].name} in ${client.guilds.cache.get(serverID).name}\n\nYour payment ID is: ${payment.id}`
-                }
-                if(sendEmails) {
-                    sgMail
-                    .send(msg)
-                    .then(() => {
-                        //console.log('Email sent')
-                    })
-                    .catch((error) => {
-                        console.error(error)
-                    })
-                }
+
+                sendEmail(payment.payer.payer_info.email, payment.transactions[0].item_list.items[0].name, serverID, payment.id)
               
           }
       });
     });
     app.get('/stripesuccess', async (req, res) => {
-    
         const sessionID = req.query.sessionID;
         if(!sessionID) {
             return res.redirect('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
         }
         const session = await stripe.checkout.sessions.retrieve(sessionID);
-        const messageID = session.metadata.messageID;
-        const clicker = session.metadata.clicker;
-        const info = session.metadata.info
-        const productInfo = JSON.parse(fs.readFileSync('./db/listings.json'))[info]
-        const channel = await client.channels.fetch(paymentLogs)
+        const { messageID, userID, productName, invoice, amount } = session.metadata
+        const productInfo = JSON.parse(fs.readFileSync('./db/listings.json'))[productName]
+        const channel = await client.channels.fetch(paymentLogs).catch(err => { })
         if(channel) {
-            const embed = new Discord.MessageEmbed()
-                .setColor('AQUA')
+            const embed = new EmbedBuilder()
+                .setColor('Aqua')
                 .setTitle('New Order Created')
-                .setDescription(`User <@${clicker}> (${clicker}) has just purchased \`${session.metadata.product}\` for \`${(parseInt(session.metadata.amount) / 100).toFixed(2)}\`\n\nPayment ID: ${session.id}`)
-                .setThumbnail(channel.guild.iconURL() || `https://cdn.discordapp.com/embed/avatars/0.png`)
+                .setDescription(`User <@${userID}> (${userID}) has just purchased \`${session.metadata.product}\` for \`${(parseInt(amount) / 100).toFixed(2)}\`\n\nPayment ID: ${session.id}`)
+                .setThumbnail(channel.guild.iconURL())
                 .setFooter({ text: `${footer} - Made By Cryptonized` })
 
             channel.send({ embeds: [embed] })
         }
-        if(session.metadata.invoice === false) {
-            events.paymentCompleted(clicker, info)
-            await globalCustomerRole(clicker)
-            await customerRoles(clicker, info)
+        if(!invoice) {
+            events.paymentCompleted(userID, info)
+            await globalCustomerRole(userID)
+            await customerRoles(userID, info)
             const file = JSON.parse(fs.readFileSync('./db/listings.json'))
-            const newArray = file[info].clients.push(clicker)
+            const newArray = file[info].clients.push(userID)
             file[productName].clients = newArray
             fs.writeFileSync('./db/listings.json', file, null, 4)
             res.redirect(productInfo.productInfo.success_url);
         }
         else {
-            events.invoice(clicker, (parseInt(session.metadata.amount) / 100).toFixed(2))
-            delete require.cache[require('path').resolve('./db/invoices.json')]
+            events.invoice(userID, (parseInt(session.metadata.amount) / 100).toFixed(2))
             let obj = {}
-            let invoices = require('./db/invoices.json')
+            let invoices = JSON.parse(fs.readFileSync('./db/invoices.json'))
             obj.status = "Paid"
             let arr = invoices[messageID].client
             if(invoices[messageID].client[0]) {
-                arr.push(clicker) 
+                arr.push(userID) 
                 obj.client = arr
             } 
             else {
-                obj.client = [clicker]
+                obj.client = [userID]
             }
             invoices[messageID] = obj
             fs.writeFileSync('./db/invoices.json', JSON.stringify(invoices))
             res.redirect(invoiceSuccessUrl);
         }
 
-        const msg = {
-            to: session.customer_details.email,
-            from: fromEmail,
-            subject: `Payment Confirmation`,
-            text: `Thank you for your recent purchase of ${session.metadata.product} in ${client.guilds.cache.get(serverID).name}\n\nYour payment ID is: ${sessionID}`
-        }
-        if(sendEmails) {
-            sgMail
-            .send(msg)
-            .then(() => {
-                //console.log('Email sent')
-            })
-            .catch((error) => {
-                console.error(error)
-            })
-        }
+        sendEmail(session.customer_details.email, productName, serverID, sessionID)
 
     });
       
     app.listen(port, () => console.log(`Running on port ${port}`));
-      
-
 })
 
 client.on('interactionCreate', async (interaction) => {
-    if(interaction.isButton()) {
-        if (interaction.customId.startsWith('NEURONstripe_')) {
-            const info = JSON.parse(fs.readFileSync('./db/listings.json'))[interaction.customId.split('NEURONstripe_')[1]]
-            const amou = parseFloat(interaction.message.embeds[0].fields[1].value.replace(currencySymbol, '').replace(' ', '').replace(/`/g, '')).toFixed(2) * 100 
-            events.paymentInitiate(interaction.user.id, interaction.customId.split('NEURONstripe_')[1], amou, 'stripe')
-            if (!info) { // Not in listings database so we assume it is an invoice
-                const session = await stripe.checkout.sessions.create({
-                    payment_method_types: ['card'],
-                    line_items: [
-                      {
-                        price_data: {
-                          currency: currency,
-                          product_data: {
-                            name: 'Custom Invoice',
-                            description: `Made By Cryptonized | Note: This product will be delivered to ${interaction.user.tag}, if this isn't you, ensure you are using your own link!`,
-                            images: [`${interaction.message.guild.iconURL()}`],
-                          },
-                          unit_amount: amou,
-                        },
-                        quantity: 1,
-                      },
-                    ],
-                    metadata: {
-                        messageID: interaction.message.id,
-                        clicker: interaction.user.id,
-                        product: 'Custom Invoice',
-                        info: interaction.customId.split('NEURONstripe_')[1],
-                        amount: amou,
-                        invoice: true
-                    },
-                    mode: 'payment',
-                    allow_promotion_codes: true,
-                    success_url: `http://${ip}:${port}/stripesuccess?sessionID={CHECKOUT_SESSION_ID}`,
-                    cancel_url: `${invoiceCancelUrl}`,
-                  });
-
-                interaction.reply({ content: `Your Checkout Link: ${session.url}\n\n**Payment ID**: ${session.id}\n\n***Note: This invoice will be delivered to whoever is to use this link, ensure you are using your own link!***`, ephemeral: true })
-            }
-            else {
-                const session = await stripe.checkout.sessions.create({
-                    payment_method_types: ['card'],
-                    line_items: [
-                      {
-                        price_data: {
-                          currency: currency,
-                          product_data: {
-                            name: interaction.message.embeds[0].title,
-                            description: `Made By Cryptonized | Note: This product will be delivered to ${interaction.user.tag}, if this isn't you, ensure you are using your own link!`,
-                            images: [`${interaction.message.guild.iconURL()}`],
-                          },
-                          unit_amount: amou,
-                        },
-                        quantity: 1,
-                      },
-                    ],
-                    metadata: {
-                        messageID: interaction.message.id,
-                        clicker: interaction.user.id,
-                        product: interaction.message.embeds[0].title,
-                        info: interaction.customId.split('NEURONstripe_')[1],
-                        amount: amou,
-                        invoice: false
-                    },
-                    mode: 'payment',
-                    allow_promotion_codes: true,
-                    success_url: `http://${ip}:${port}/stripesuccess?&sessionID={CHECKOUT_SESSION_ID}`,
-                    cancel_url: `${info.productInfo.cancel_url}`,
-                  });
-
-                if(info.clients) {
-                    if (info.clients.indexOf(interaction.user.id) > -1) {
-                        interaction.reply({ content: `Your Checkout Link: ${session.url}\n\n**Payment ID**: ${session.id}\n\n***Note: You have already purchased this product, you may download it with the download button above!***`, ephemeral: true })
-                    }
-                    else {
-                        interaction.reply({ content: `Your Checkout Link: ${session.url}\n\n**Payment ID**: ${session.id}\n\n***Note: This product will be delivered to whoever clicked the button, so ensure you are using your own link!***`, ephemeral: true })
-                    }
-                }
-                else {
-                    interaction.reply({ content: `Your Checkout Link: ${session.url}\n\n**Payment ID**: ${session.id}\n\n***Note: This product will be delivered to whoever clicked the button, so ensure you are using your own link!***`, ephemeral: true })
-                }
-            }
-
-        }
-        else if(interaction.customId.startsWith('NEURONticket_')) {
-            const category = interaction.customId.split('NEURONticket_')[1]
-            if(!category) return interaction.reply({ content: 'Could not find a category for this product type. Please contact the bot owner to fix this!', ephemeral: true })
-            interaction.message.guild.channels.create(`${interaction.user.username}`, { 
-                parent: category
-            }).then(chann => {
-                interaction.reply({ content: `Ticket successfully created at <#${chann.id}>`, ephemeral: true})
-                chann.permissionOverwrites.edit(interaction.user, {
-                    VIEW_CHANNEL: true
-                })
-                const embed = new Discord.MessageEmbed()
-                    .setColor('AQUA')
-                    .setAuthor(`${interaction.user.tag}`, interaction.user.avatarURL() || 'https://cdn.discordapp.com/embed/avatars/0.png')
-                    .setDescription(ticketMessage)
-                    .addField('Product', `${interaction.message.embeds[0].title}`, true)
-                    .setFooter(`${footer} - Made By Cryptonized`)
-                chann.send({ embeds: [embed] })
-            })
-        }
-        else if(interaction.customId.startsWith('NEURONpaypal_')) {
-            
-            const info = JSON.parse(fs.readFileSync('./db/listings'))[interaction.customId.split('NEURONpaypal_')[1]]
-            const amou = parseFloat(interaction.message.embeds[0].fields[1].value.replace(currencySymbol, '').replace(' ', '').replace(/`/g, '')).toFixed(2)
-            events.paymentInitiate(interaction.user.id, interaction.customId.split('NEURONpaypal_')[1], amou, 'paypal')
-            if(!info) { // Generates info,  as listing not found so we assume it is an invoice
-                const create_payment_json = {
-                    "intent": "sale",
-                    "payer": {
-                        "payment_method": "paypal"
-                    },
-                    "redirect_urls": {
-                        "return_url": `http://${ip}:${port}/success?price=${amou}`,
-                        "cancel_url": invoiceCancelUrl
-                    },
-                    "transactions": [{
-                        "item_list": {
-                            "items": [{
-                                "name": `Custom Invoice`,
-                                "sku": "001",
-                                "price": `${amou}`,
-                                "currency": `${currency}`,
-                                "quantity": 1
-                            }]
-                        },
-                        "amount": {
-                            "currency": `${currency}`,
-                            "total": `${amou}`
-                        },
-                        "custom": `${interaction.user.id}|||${interaction.message.id}|||ye|||${interaction.customId.split('NEURONpaypal_')[1]}`,
-                        "description": `Made By Cryptonized | Note: This product will be delivered to whoever requested the link, so ensure you are using your own link!`
-                    }]
-                };
-                
-                paypal.payment.create(create_payment_json, function (error, payment) {
-                if (error) {
-                    throw error;
-                } else {
-                    for(let i = 0;i < payment.links.length;i++){
-                        if(payment.links[i].rel === 'approval_url'){
-                            interaction.reply({ content: `Your Checkout Link: ${payment.links[i].href}\n\n**Payment ID**: ${payment.id}\n\n***Note: This invoice will be delivered to whoever is to use this link, ensure you are using your own link!***`, ephemeral: true })
-                        }
-                    }
-                }
-                });
-            }
-            else {
-                const create_payment_json = {
-                    "intent": "sale",
-                    "payer": {
-                        "payment_method": "paypal"
-                    },
-                    "redirect_urls": {
-                        "return_url": `http://${ip}:${port}/success?price=${amou}`,
-                        "cancel_url": info.productInfo.cancel_url
-                    },
-                    "transactions": [{
-                        "item_list": {
-                            "items": [{
-                                "name": `${interaction.message.embeds[0].title}`,
-                                "sku": "001",
-                                "price": `${amou}`,
-                                "currency": `${currency}`,
-                                "quantity": 1
-                            }]
-                        },
-                        "amount": {
-                            "currency": `${currency}`,
-                            "total": `${amou}`
-                        },
-                        "custom": `${interaction.user.id}|||${interaction.message.id}|||na|||${interaction.customId.split('NEURONpaypal_')[1]}`,
-                        "description": `Made By Cryptonized | Note: This product will be delivered to whoever requested the link, so ensure you are using your own link!`
-                    }]
-                };
-                
-                paypal.payment.create(create_payment_json, function (error, payment) {
-                if (error) {
-                    throw error;
-                } else {
-                    for(let i = 0;i < payment.links.length;i++){
-                        if(payment.links[i].rel === 'approval_url'){
-                            interaction.reply({ content: `Your Checkout Link: ${payment.links[i].href}\n\n**Payment ID**: ${payment.id}\n\n***Note: This product will be delivered to whoever clicked the button, so ensure you are using your own link!***`, ephemeral: true })
-                            
-                        }
-                    }
-                }
-                });
-            }
-        }
-        else if(interaction.customId.startsWith('NEURONdownload_')) {
-            const info = JSON.parse(fs.readFileSync('./db/listings.json'))[interaction.customId.split('NEURONdownload_')[1]]
-            if(!info.clients) return interaction.reply({ content:'You must first purchase this product before you can download it!', ephemeral: true})
-            if (info.clients.indexOf(interaction.user.id) < 0) {
-                interaction.reply({ content:'You must first purchase this product before you can download it!', ephemeral: true})
-            }
-            else {
-                interaction.reply({ content:`Your download link is: ${info.productInfo.downloadURL}`, ephemeral: true})
-            }
-            
-        }
-        else if(interaction.customId === 'NEURONrefresh') {
-            const invoiceInfo = JSON.parse(fs.readFileSync('./db/invoices.json'))[interaction.message.id]
-            if(!invoiceInfo) return interaction.reply({ content: 'Error! Could not find an invoice with that ID', ephemeral: true});
-            const embed = interaction.message.embeds[0]
-            let fields = embed.fields
-            fields[0].value = invoiceInfo.status ? `\`\`\`${invoiceInfo.status}\`\`\`` : '```Unpaid```'
-            fields[2].value = invoiceInfo.client[0] ? `<@${invoiceInfo.client.join('> <@')}>` : '```None```'
-            interaction.message.edit({ embeds: [embed] })
-            interaction.reply({ content: 'Successfully refreshed!', ephemeral: true})
-            
-        }
-    }
-    else if(interaction.isCommand()) {
+    if(interaction.type === InteractionType.ApplicationCommand) {
         const command = client.commands.get(interaction.commandName);
         if (!command) return;
 
@@ -601,6 +357,17 @@ client.on('interactionCreate', async (interaction) => {
             console.error(error);
             await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
         }
+    }
+    else {
+        let args = []
+        let customId = interaction.customId
+        if(interaction.customId.includes('/\\ND\\/')) {
+            customId = customId.split('/\\ND\\/')[0]
+            args = interaction.customId.split('/\\ND\\/')
+            args.shift() // Remove the actual ID
+        }
+        const interactionFile = require(`./interactions/${InteractionType[interaction.type]}/${customId}`)
+        interactionFile.execute(interaction, args, logChann)
     }
 })
 

@@ -1,4 +1,4 @@
-const Discord = require('discord.js');
+const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
 const { footer } = require('../config.json')
 const { currencySymbol, currencyBeforeOrAfter, invoiceImage, paypalEmoji, stripeEmoji } = require('../config.json').storeBot.format
 const { SlashCommandBuilder } = require('@discordjs/builders');
@@ -14,36 +14,35 @@ module.exports = {
     async execute(interaction) {
         const amount = interaction.options.get('amount').value
 
-        const embed = new Discord.MessageEmbed()
-            .setColor()
-            .setTitle('New Invoice Created')
+        const embed = new EmbedBuilder()
+            .setTitle('Custom Invoice')
             .setThumbnail(interaction.guild.iconURL({ dynamic: true }))
-            .addField('Current Status', '```Unpaid```', true)
+            .addFields([{ name: 'Current Status', value: '```Unpaid```', inline: true }])
             .setImage(invoiceImage)
             .setFooter({ text: `${footer} - Made By Cryptonized`, iconURL: interaction.guild.iconURL() })
 
         if(currencyBeforeOrAfter.toLowerCase() === 'after') {
             embed.setDescription(`A new invoice has been generated for \`${amount} ${currencySymbol}\``)
-            embed.addField('Total Price', `\`\`\`${amount} ${currencySymbol}\`\`\``, true)
+            embed.addFields([{ name: 'Total Price', value: `\`\`\`${amount} ${currencySymbol}\`\`\``, inline: true }])
         }
         else {
             embed.setDescription(`A new invoice has been generated for \`${currencySymbol}${amount}\``)
-            embed.addField('Total Price', `\`\`\`${currencySymbol}${amount}\`\`\``, true)
+            embed.addFields([{ name: 'Total Price', value: `\`\`\`${currencySymbol}${amount}\`\`\``, inline: true }])
         }
-        const button1 = new Discord.MessageButton()
-            .setStyle("SECONDARY")
+        const button1 = new ButtonBuilder()
+            .setStyle(ButtonStyle.Secondary)
             .setEmoji(paypalEmoji)
             .setLabel("Pay With Paypal")
-            .setCustomId(`NEURONpaypal_invoice`)
-        const button2 = new Discord.MessageButton()
-            .setStyle("SECONDARY")
+            .setCustomId(`paypal/\\ND\\/invoice`)
+        const button2 = new ButtonBuilder()
+            .setStyle(ButtonStyle.Secondary)
             .setEmoji(stripeEmoji)
             .setLabel("Pay With Stripe")
-            .setCustomId(`NEURONstripe_invoice`)
-        const button3 = new Discord.MessageButton()
+            .setCustomId(`stripe/\\ND\\/invoice`)
+        const button3 = new ButtonBuilder()
             .setStyle("PRIMARY")
             .setLabel("Refresh Status")
-            .setCustomId(`NEURONrefresh`)
+            .setCustomId(`refresh`)
 
         if(!invoiceUsePaypal) {
             button1.setDisabled(true)
@@ -51,9 +50,9 @@ module.exports = {
         if(!invoiceUseStripe) {
             button2.setDisabled(true)
         }
-        embed.addField('Client(s)', '```None```', true)
+        embed.addFields([{ name: 'Client(s)', value: '```None```', inline: true }])
         
-        const buttonRow = new Discord.MessageActionRow()
+        const buttonRow = new ActionRowBuilder()
             .addComponents(button1,button2, button3)
         interaction.reply({ embeds: [embed], components: [buttonRow] })
         const mes = await interaction.fetchReply()
