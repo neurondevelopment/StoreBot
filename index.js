@@ -8,7 +8,9 @@ const { fromEmail, sendgridApiKey, sendEmails } = require('./config.json').store
 const app = require('express')()
 const stripe = require('stripe')(stripeSecretKey)
 const sgMail = require('@sendgrid/mail')
-sgMail.setApiKey(sendgridApiKey)
+if(sendEmails) {
+    sgMail.setApiKey(sendgridApiKey)
+}
 const { paypalEmoji, stripeEmoji, ticketEmoji, openTicket, buttonHideOrDisable, redirect, download } = require('./config.json').storeBot.format
 const paypal = require('paypal-rest-sdk');
 const events = require('./events')
@@ -193,7 +195,7 @@ setInterval(() => {
 client.on('ready', async () => {
     console.log('Please note, you are currently using the staging version of StoreBot, this is not recommended for production use and some features may not work / be unstable.')
     mainGuild = await client.guilds.fetch(serverID)
-    if(!mainGuild || !mainGuild[0]) return error('index.js', 'Invalid serverID specified in config!')
+    if(!mainGuild) return error('index.js', 'Invalid serverID specified in config!')
     updateListings()
     const rest = new REST({ version: '10' }).setToken(token);
 
