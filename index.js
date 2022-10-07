@@ -1,5 +1,5 @@
 const Discord = require('discord.js');
-const { Routes, EmbedBuilder, ButtonBuilder, ButtonStyle, InteractionType } = require('discord.js')
+const { Routes, EmbedBuilder, ButtonBuilder, ButtonStyle, InteractionType, ActivityType } = require('discord.js')
 const fs = require('fs')
 const figlet = require('figlet');
 const { token, footer } = require('./config.json');
