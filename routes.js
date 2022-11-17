@@ -12,7 +12,7 @@ module.exports = function(app) {
         const description = md.render(desc)
         res.render('product.ejs', { description })
     })
-    app.get('/checkout', function(req, res) {
-        res.render('checkout.ejs')
+    app.get('/cart', function(req, res) {
+        res.render('cart.ejs')
     })
 }
