@@ -1,0 +1,84 @@
+body {
+   background-color: #10141c !important;
+}
+
+.yellow {
+    color: #ffd700;
+}
+
+.searchStyle {
+    background-color: rgb(37, 37, 37) !important;
+    border-color: grey !important;
+    color: white !important;
+}
+
+.form-control {
+    background-color: rgb(37, 37, 37) !important;
+    border-color: grey !important;
+    color: white !important;
+}
+
+.sidebarText {
+    font-size: 1rem;
+    color: inherit;
+    text-decoration: none;
+}
+.sidebarText:hover {
+    cursor: pointer;
+    color: #fff
+}
+
+.productImage {
+    width: 100%;
+    border: 0.1rem solid #8c00ff;
+}
+
+.productCard {
+    width: 18rem; 
+    border: 0.1px solid grey; 
+    margin: 1rem;
+    transition: all 0.2s ease-in-out;
+}
+
+.productCard:hover {
+    filter: drop-shadow(0 0 0.5rem grey);
+    margin-left: 2rem;
+    margin-right: 2rem;
+    transform: scale(1.02);
+}
+
+.imgPlaceholder:hover {
+    transform: scale(1.2);
+}
+
+.productButton {
+    width: 100%;
+}
+
+.imgPlaceholder {
+    background-color: grey; 
+    height: 9.5rem; 
+    width: 100%; 
+    box-shadow: 0 0 0.5rem 0.2rem rgb(37, 37, 37) inset;
+    transition: all 0.3s ease-in-out;
+}
+
+.ppb {
+    border-color: #4B91C1 !important;
+    color: #4B91C1 !important;
+}
+
+.ppb:hover {
+    background-color: #4B91C1 !important;
+    color: white !important
+}
+
+.sb {
+    border-color: #695EFA !important;
+    color: #695EFA !important;
+}
+
+.sb:hover {
+    background-color: #695EFA !important;
+    color: white !important
+}
