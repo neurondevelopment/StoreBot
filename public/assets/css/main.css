@@ -51,6 +51,20 @@ body {
     transform: scale(1.2);
 }
 
+.lightbg {
+    background-color: rgb(37, 37, 37) !important
+}
+
+.nomargin {
+    margin-top: 0.2rem !important;
+    margin-bottom: 0.2rem !important;
+}
+
+.darkText {
+    background-color: rgb(25, 25, 25);
+    padding: 0.3rem;
+    border-radius: 0.5rem;
+}
 .productButton {
     width: 100%;
 }
