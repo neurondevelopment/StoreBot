@@ -68,7 +68,7 @@ function showProducts(p) {
           <h5 class="card-title"><a href="#" style="color: inherit; text-decoration: none">${product.name}</a></h5>
           <div class="stars">${('<i class="fa-solid fa-star yellow"></i>').repeat(product.rating)}</div>
           <p>£${product.price}</p>
-          <a href="#" style="justify-content: center" class="btn btn-outline-info">View Info</a>
+          <a href="/product/${product.id}" style="justify-content: center" class="btn btn-outline-info">View Info</a>
           <a href="#" style="justify-content: center" class="btn btn-outline-light">Add to Cart</a>
         </div>`
         el.innerHTML = innerHTML

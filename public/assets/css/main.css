@@ -73,6 +73,11 @@ body {
     cursor: pointer
 }
 
+input[type="checkbox"] {
+    background-color: rgb(37,37,37) !important;
+    border-color: grey !important;
+}
+
 .imgPlaceholder {
     background-color: grey; 
     height: 9.5rem; 
