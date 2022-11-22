@@ -80,6 +80,18 @@ function showProducts(p) {
 
 $(document).ready(function() {
     showProducts(products)
+
+    var allCategories = document.querySelectorAll('*[id^="category"]')
+    allCategories.forEach(category => {
+        category.addEventListener('click', function() {
+            if(!this.id.endsWith('check')) {
+                document.getElementById(`${category.id}check`).checked = !document.getElementById(`${category.id}check`).checked
+            }
+            else {
+                this.checked = !this.checked
+            }
+        })
+    })
 })
 
 $('#search').keyup(function(e) {

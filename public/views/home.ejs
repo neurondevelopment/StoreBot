@@ -19,20 +19,10 @@
         <div class="collapse navbar-collapse" id="navbarNavDropdown">
           <ul class="navbar-nav">
             <li class="nav-item">
-              <a class="nav-link active" aria-current="page" href="#">Home</a>
+              <a class="nav-link active" aria-current="page" href="#">Store</a>
             </li>
             <li class="nav-item">
               <a class="nav-link" href="#">About</a>
-            </li>
-            <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                Store
-              </a>
-              <ul class="dropdown-menu dropdown-menu-dark">
-                <li><a class="dropdown-item" href="#">Category 1</a></li>
-                <li><a class="dropdown-item" href="#">Category 2</a></li>
-                <li><a class="dropdown-item" href="#">Category 3</a></li>
-              </ul>
             </li>
           </ul>
         </div>
@@ -44,6 +34,20 @@
           <form class="d-flex p-4" role="search">
             <input class="form-control me-2 searchStyle" type="search" id="search" placeholder="Search" aria-label="Search">
           </form>
+          <h5 style="color: grey;">Categories</h5>
+          <div class="d-flex flex-row justify-content-center category" id="category1">
+            <p class="nomargin">Category 1</p>
+            <input class="form-check-input ms-2 my-auto" type="checkbox" id="category1check">
+          </div>
+          <div class="d-flex flex-row justify-content-center category" id="category2">
+            <p class="nomargin">Category 2</p>
+            <input class="form-check-input ms-2 my-auto" type="checkbox" id="category2check">
+          </div>
+          <div class="d-flex flex-row justify-content-center category" id="category3">
+            <p class="nomargin">Category 3</p>
+            <input class="form-check-input ms-2 my-auto" type="checkbox" id="category3check">
+          </div>
+          <br>
           <h5 style="color: grey;">Sort Items</h5>
           <a class="sidebarText p-1" onclick="sortAZ()">Sort A-Z</a>
           <a class="sidebarText p-1" onclick="sortZA()">Sort Z-A</a>
