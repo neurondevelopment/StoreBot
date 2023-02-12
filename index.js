@@ -2,6 +2,7 @@ const Discord = require('discord.js');
 const fs = require('fs')
 const figlet = require('figlet');
 const { token, footer } = require('./config.json');
+const { paymentLogs } = require('./config.json').logs
 const { stripeSecretKey, port, paypalSandboxOrLive, paypalClientSecret, paypalClientID, currency, invoiceSuccessUrl,invoiceCancelUrl, ip, invoiceUseStripe, invoiceUsePaypal, globalCustomerRoles, serverID } = require('./config.json').storeBot
 const app = require('express')()
 const stripe = require('stripe')(stripeSecretKey)
