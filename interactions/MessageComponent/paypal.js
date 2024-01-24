@@ -5,7 +5,7 @@ module.exports = {
     name: 'paypal',
     async execute(interaction, args) {
         const info = JSON.parse(fs.readFileSync('../../db/listings.json'))[args[0]]
-        const amount = parseFloat(interaction.message.embeds[0].fields[1].value.replace(currencySymbol, '').replace(' ', '').replace(/`/g, '')).toFixed(2)
+        const amount = parseFloat(interaction.message.embeds[0].fields[1].value.replace(new RegExp(currencySymbol, 'g'), '').replace(/\s/g, '').replace(/`/g, '')).toFixed(2)
         events.paymentInitiate(interaction.user.id, args[0], amount, 'paypal')
         const customObj = {
             "userID": interaction.user.id,

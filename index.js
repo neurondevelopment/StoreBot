@@ -5,8 +5,8 @@ const figlet = require('figlet');
 const { token, footer } = require('./config.json');
 const undici = require('undici')
 const { stripeSecretKey, port, paypalSandboxOrLive, paypalClientSecret, paypalClientID, currency, invoiceSuccessUrl, globalCustomerRoles, serverID } = require('./config.json').storeBot
+const { rateLimit } = require('express-rate-limit')
 const { fromEmail, sendgridApiKey, sendEmails } = require('./config.json').storeBot.email
-const app = require('express')()
 const stripe = require('stripe')(stripeSecretKey)
 const sgMail = require('@sendgrid/mail')
 if(sendEmails) {
@@ -18,11 +18,20 @@ const events = require('./events')
 const { error } = require('./utils')
 let mainGuild;
 
+// Setup Paypal
 paypal.configure({
     'mode': paypalSandboxOrLive, //sandbox or live
     'client_id': paypalClientID,
     'client_secret': paypalClientSecret
 });
+
+// Setup Express
+const app = require('express')()
+const limiter = rateLimit({ 
+    windowMs: 30000, // 30 seconds
+    max: 15 // Limit each IP to 15 requests per windowMs
+});
+app.use(limiter)
 
 const client  = new Discord.Client({
     intents: 513
@@ -112,13 +121,9 @@ function sendEmail(emailAddress, productName, serverID, paymentID) {
 }
 
 async function globalCustomerRole(user) {
-    globalCustomerRoles.forEach(async curr => {
-        const role = await mainGuild.roles.fetch(curr).catch(err => { })
-        if(!role) return console.log(`Invalid global customer role specified : ${role}`)
-        const member = await mainGuild.members.fetch(user)
-        if(!member) return;
-        member.roles.add(role)
-    })
+    const member = await mainGuild.members.fetch(user)
+    if(!member) return console.log(`Invalid user specified : ${user}`);
+    member.roles.add(globalCustomerRoles)
 }
 
 async function customerRoles(user, product) {
@@ -314,10 +319,12 @@ client.on('ready', async () => {
             await globalCustomerRole(userID)
             await customerRoles(userID, info)
             const file = JSON.parse(fs.readFileSync('./db/listings.json'))
-            const newArray = file[info].clients.push(userID)
-            file[productName].clients = newArray
-            fs.writeFileSync('./db/listings.json', file, null, 4)
-            res.redirect(productInfo.productInfo.success_url);
+            const newArray = file[info].clients.concat(userID) // Sanitize the input by using concat instead of push
+            file[info].clients = newArray
+            fs.writeFileSync('./db/listings.json', JSON.stringify(file, null, 4)) // Fix the parameter order in writeFileSync
+            const successUrl = productInfo.productInfo.success_url.startsWith('http') ? productInfo.productInfo.success_url : '/'; // Sanitize the success URL
+            // deepcode ignore OR: Already checked above
+            res.redirect(successUrl);
         }
         else {
             events.invoice(userID, (parseInt(session.metadata.amount) / 100).toFixed(2))

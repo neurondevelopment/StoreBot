@@ -5,19 +5,20 @@ module.exports = {
     name: 'stripe',
     async execute(interaction, args) {
         const info = JSON.parse(fs.readFileSync('../../db/listings.json'))[args[0]]
-        const amount = parseFloat(interaction.message.embeds[0].fields[1].value.replace(currencySymbol, '').replace(' ', '').replace(/`/g, '')).toFixed(2) * 100 
-        events.paymentInitiate(interaction.user.id, args[0], amount, 'stripe')
+        const amount = parseFloat(interaction.message.embeds[0].fields[1].value.replace(currencySymbol, '').replace(/\s/g, '').replace(/`/g, ''));
+        const amountInCents = (amount * 100).toFixed(2);
+        events.paymentInitiate(interaction.user.id, args[0], amountInCents, 'stripe');
         const customObj = {
-            "userID": interaction.user.id,
-            "messageID": interaction.message.id,
-            "invoice": false,
-            "amount": amount,
-            "productName": args[0]
-        }
+          "userID": interaction.user.id,
+          "messageID": interaction.message.id,
+          "invoice": false,
+          "amount": amountInCents,
+          "productName": args[0]
+        };
 
         let cancelUrl = invoiceCancelUrl;
-        if(!info) customObj['invoice'] = true;
-        if(info) cancelUrl = info.productInfo.cancel_url;
+        if (!info) customObj['invoice'] = true;
+        if (info) cancelUrl = info.productInfo.cancel_url;
 
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
