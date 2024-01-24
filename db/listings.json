@@ -4,7 +4,7 @@
         "channelID": "Channel ID",
         "messageID": "", 
         "embed": {
-            "colour": "RANDOM",
+            "colour": "Random",
             "description": "Cool listing", 
             "features": [ 
                 "Feature 1",
