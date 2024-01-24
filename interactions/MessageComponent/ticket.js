@@ -14,7 +14,7 @@ module.exports = {
             })
             const embed = new EmbedBuilder()
                 .setColor('Aqua')
-                .setAuthor({ name: `${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() })
+                .setAuthor({ name: `${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
                 .setDescription(ticketMessage)
                 .addFields([{ name: 'Product', value: `${interaction.message.embeds[0].title}` }])
                 .setFooter({ text: `${footer} - Made By Cryptonized` })
