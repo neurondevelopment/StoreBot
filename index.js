@@ -4,6 +4,7 @@ const fs = require('fs')
 const figlet = require('figlet');
 const { token, footer } = require('./config.json');
 const undici = require('undici')
+const { paymentLogs } = require('./config.json').logs
 const { stripeSecretKey, port, paypalSandboxOrLive, paypalClientSecret, paypalClientID, currency, invoiceSuccessUrl, globalCustomerRoles, serverID } = require('./config.json').storeBot
 const { rateLimit } = require('express-rate-limit')
 const { fromEmail, sendgridApiKey, sendEmails } = require('./config.json').storeBot.email
