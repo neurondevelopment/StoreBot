@@ -42,7 +42,7 @@ module.exports = {
                     "total": `${amount}`
                 },
                 "custom": `${JSON.stringify(customObj)}`,
-                "description": `Made By Cryptonized | Note: This product will be delivered to whoever requested the link, so ensure you are using your own link!`
+                "description": `Made By Cryptonized | Note: This product will be delivered to ${interaction.user.username}, if this isn't you, ensure you are using your own link`
             }]
         };
         

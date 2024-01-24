@@ -27,7 +27,7 @@ module.exports = {
                   currency: currency,
                   product_data: {
                     name: interaction.message.embeds[0].title,
-                    description: `Made By Cryptonized | Note: This product will be delivered to ${interaction.user.tag}, if this isn't you, ensure you are using your own link!`,
+                    description: `Made By Cryptonized | Note: This product will be delivered to ${interaction.user.username}, if this isn't you, ensure you are using your own link!`,
                     images: [`${interaction.message.guild.iconURL()}`],
                   },
                   unit_amount: amount,
