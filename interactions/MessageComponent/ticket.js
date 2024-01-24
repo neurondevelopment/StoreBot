@@ -1,11 +1,13 @@
-const { EmbedBuilder } = require('discord.js')
+const { EmbedBuilder, ChannelType } = require('discord.js')
 const { ticketMessage } = require('../../config.json').storeBot.format
 
 module.exports = {
     name: 'ticket',
     async execute(interaction, args) {
         if(!args[0]) return interaction.reply({ content: 'Could not find a category for this product type.', ephemeral: true })
-        interaction.message.guild.channels.create(`${interaction.user.username}`, { 
+        interaction.message.guild.channels.create({
+            name: `ticket-${interaction.user.username}`,
+            type: ChannelType.GuildText,
             parent: args[0]
         }).then(channel => {
             interaction.reply({ content: `Ticket successfully created at <#${channel.id}>`, ephemeral: true})
