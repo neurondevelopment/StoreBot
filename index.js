@@ -1,5 +1,5 @@
 const Discord = require('discord.js');
-const { Routes, EmbedBuilder, ButtonBuilder, ButtonStyle, InteractionType, ActivityType } = require('discord.js')
+const { Routes, EmbedBuilder, ButtonBuilder, ButtonStyle, InteractionType, ActivityType, REST } = require('discord.js')
 const fs = require('fs')
 const figlet = require('figlet');
 const { token, footer } = require('./config.json');
@@ -27,6 +27,7 @@ paypal.configure({
 const client  = new Discord.Client({
     intents: 513
 });
+
 client.commands = new Discord.Collection();
 const commandFiles = fs.readdirSync(`./commands`).filter(file => file.endsWith('.js'));
 
@@ -35,8 +36,6 @@ process.on('unhandledRejection', (reason, promise) => {
     console.log(`Unhandled Rejection at: ${reason.stack || reason} | ${pr}`);
 
 });
-
-const { REST } = require('@discordjs/rest');
 
 const commands = [];
 
@@ -63,7 +62,6 @@ function createEmbed(info, name) {
         { name: `Product Type`, value: `\`\`\`${info.type}\`\`\``, inline: true}
     ])
     return embed
-    
 }
 
 function getButtons(info, name) {
@@ -116,20 +114,17 @@ function sendEmail(emailAddress, productName, serverID, paymentID) {
 async function globalCustomerRole(user) {
     globalCustomerRoles.forEach(async curr => {
         const role = await mainGuild.roles.fetch(curr).catch(err => { })
-        if(role) {
-            const member = await mainGuild.members.fetch(user)
-            if(!member) return;
-            member.roles.add(role)
-        }
-        else {
-            console.log(`Invalid global customer role specified : ${role}`)
-        }
+        if(!role) return console.log(`Invalid global customer role specified : ${role}`)
+        const member = await mainGuild.members.fetch(user)
+        if(!member) return;
+        member.roles.add(role)
     })
 }
 
 async function customerRoles(user, product) {
     if(!user) return;
     const info = JSON.parse(fs.readFileSync('./db/listings.json'))[product]
+    if(!info) return console.log(`Invalid product specified : ${product}`)
     info.productInfo.customerRoles.forEach(async curr => {
         const role = await mainGuild.roles.fetch(curr).catch(err => { })
         if(role) {
@@ -148,7 +143,7 @@ async function updateListings() {
     for(const listing in listings) {
         const info = listings[listing]
         if(info.messageID && info.channelID) {
-            const channel = await mainGuild.channels.fetch(info.channelID)
+            const channel = await mainGuild.channels.fetch(info.channelID).catch(err => { })
             if(channel) {
                 const message = await channel.messages.fetch(info.messageID).catch(err => {})
                 
@@ -181,8 +176,9 @@ async function updateListings() {
 }
 
 async function checkVersion() {
+    const branch = 'v14-staging'
     const bot = 'StoreBot'
-    const req = await undici.request(`https://raw.githubusercontent.com/development/${bot}/main/package.json`)
+    const req = await undici.request(`https://raw.githubusercontent.com/neurondevelopment/${bot}/${branch}/package.json`)
     const data = await req.body.json()
     if(data.version > require('./package.json').version) {
         console.log('\x1b[33m%s\x1b[0m', `New version available, please update to v${data.version} at https://github.com/development/${bot}`)
@@ -224,7 +220,7 @@ client.on('ready', async () => {
 
     if(type && content) {
         if(!ActivityType[type]) return error('Bot Status Config', `Invalid activity type: ${type}`)
-        client.user.setActivity(content, { type: ActivityType[type] })
+        client.user.setPresence({ activities: [ {name: content, type: ActivityType[type]}]})
     }
 
     app.get('/success', (req, res) => {
