@@ -1,5 +1,4 @@
-const Discord = require('discord.js');
-const { Routes, EmbedBuilder, ButtonBuilder, ButtonStyle, InteractionType, ActivityType, REST } = require('discord.js')
+const { Routes, EmbedBuilder, ButtonBuilder, ButtonStyle, InteractionType, ActivityType, REST, Client, Collection } = require('discord.js')
 const fs = require('fs')
 const figlet = require('figlet');
 const { token, footer } = require('./config.json');
@@ -34,11 +33,11 @@ const limiter = rateLimit({
 });
 app.use(limiter)
 
-const client  = new Discord.Client({
+const client  = new Client({
     intents: 513
 });
 
-client.commands = new Discord.Collection();
+client.commands = new Collection();
 const commandFiles = fs.readdirSync(`./commands`).filter(file => file.endsWith('.js'));
 
 process.on('unhandledRejection', (reason, promise) => {
